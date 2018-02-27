@@ -1,0 +1,59 @@
+FROM php:7.0.7-fpm
+
+ENV REFRESHED_AT 2018-02-27
+
+RUN echo "deb http://debian.ustc.edu.cn/debian/ jessie main non-free contrib" > /etc/apt/sources.list && \
+    echo "deb http://debian.ustc.edu.cn/debian/ jessie-proposed-updates main non-free contrib" >> /etc/apt/sources.list && \
+    echo "deb-src http://debian.ustc.edu.cn/debian/ jessie main non-free contrib" >> /etc/apt/sources.list && \
+    echo "deb-src http://debian.ustc.edu.cn/debian/ jessie-proposed-updates main non-free contrib" >> /etc/apt/sources.list
+
+RUN apt-get update
+
+RUN apt-get install -y zlib1g-dev
+RUN apt-get install -y openssl
+RUN apt-get install -y libssl-dev
+RUN apt-get install -y pkg-config
+RUN apt-get install -y libpcre3 libpcre3-dev
+
+RUN docker-php-ext-install mbstring
+RUN docker-php-ext-install zip
+RUN docker-php-ext-install pdo
+RUN docker-php-ext-install pdo_mysql
+
+COPY composer.phar /usr/local/bin/composer
+RUN chmod a+x /usr/local/bin/composer
+
+RUN apt-get install -y git
+
+RUN apt-get install -y -f libxrender1
+
+RUN apt-get install -y -f libfontconfig
+
+# 安装系统字符编码
+
+RUN apt-get install -y -f locales
+
+RUN sed -i -e 's/# zh_CN GB2312/zh_CN GB2312/' /etc/locale.gen && \
+    sed -i -e 's/# zh_CN.GBK GBK/zh_CN.GBK GBK/' /etc/locale.gen && \
+    sed -i -e 's/# zh_CN.UTF-8 UTF-8/zh_CN.UTF-8 UTF-8/' /etc/locale.gen && \
+    sed -i -e 's/# en_US ISO-8859-1/en_US ISO-8859-1/' /etc/locale.gen && \
+    sed -i -e 's/# en_US.ISO-8859-15 ISO-8859-15/en_US.ISO-8859-15 ISO-8859-15/' /etc/locale.gen && \
+    sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
+    echo 'LANG="zh_CN.UTF-8"'>/etc/default/locale && \
+    dpkg-reconfigure --frontend=noninteractive locales && \
+    update-locale LANG=zh_CN.UTF-8
+
+# 安装部分中文字体
+
+RUN apt-get install -y -f xfonts-utils
+
+RUN apt-get install -y -f fontconfig
+
+ADD font-chinese/ /usr/share/fonts/truetype/font-chinese/
+
+RUN chmod -c 777 /usr/share/fonts/truetype/font-chinese && \
+    chmod -c 777 /usr/share/fonts/truetype/font-chinese/* && \
+    mkfontscale && mkfontdir && fc-cache -fv
+
+COPY timezone.ini /usr/local/etc/php/conf.d/timezone.ini
+RUN echo "Asia/Shanghai" > /etc/timezone && dpkg-reconfigure -f noninteractive tzdata

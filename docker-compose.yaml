@@ -1,0 +1,33 @@
+version: '2'
+services:
+    nginx:
+        image: nginx:1.10.1
+        ports:
+            - "80:80"
+        networks:
+            - web
+        links:
+            - php-fpm
+        volumes:
+            - "./nginx/nginx.conf:/etc/nginx/nginx.conf"
+            - "./nginx/conf.d:/etc/nginx/conf.d"
+        volumes_from:
+            - php-fpm
+        networks:
+            web:
+                ipv4_address: 172.19.238.2
+    php-fpm:
+        image: php:7.0.7-fpm
+        volumes:
+            - "./projects/:/var/www/projects"
+        networks:
+            web:
+                ipv4_address: 172.19.238.3
+
+networks:
+    web:
+        driver: bridge
+        ipam:
+            driver: default
+            config:
+                - subnet: 172.19.238.0/24
