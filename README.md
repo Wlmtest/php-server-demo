@@ -11,3 +11,7 @@ docker docker-compose
 ## 项目
 
 ./projects
+
+## 启动 
+
+终端执行 ./deploy.sh 
