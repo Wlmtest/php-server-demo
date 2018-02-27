@@ -15,9 +15,10 @@ services:
 #           web:
 #               ipv4_address: 172.19.238.2
     php-fpm:
-        image: php:7.0.7-fpm
+        build: ./php-fpm
         volumes:
             - "./projects/:/var/www/projects"
+            - "./php-fpm/php.ini:/usr/local/etc/php/php.ini"
 #       networks:
 #           web:
 #               ipv4_address: 172.19.238.3

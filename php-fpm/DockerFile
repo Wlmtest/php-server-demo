@@ -20,9 +20,6 @@ RUN docker-php-ext-install zip
 RUN docker-php-ext-install pdo
 RUN docker-php-ext-install pdo_mysql
 
-COPY composer.phar /usr/local/bin/composer
-RUN chmod a+x /usr/local/bin/composer
-
 RUN apt-get install -y git
 
 RUN apt-get install -y -f libxrender1
