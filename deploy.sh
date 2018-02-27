@@ -4,7 +4,13 @@ DIR=$(pwd)
 
 echo "这是一个部署demo"
 
-docker-compose up --build -d
+echo "\n暂停项目"
+docker-compose stop
+
+echo "\n更新容器群"
+git pull origin
+
+echo "\n项目更新"
 
 if [ ! -d "projects/paydemo" ]; then
     echo "拉取phpdemo"
@@ -17,8 +23,11 @@ if [ ! -d "projects/paydemo" ]; then
     mkdir logs && chmod -R 777 logs
 fi
 
-echo "更新phpdemo"
+echo "\n更新phpdemo"
 
 cd $DIR/projects/paydemo
 
 git pull origin
+
+echo "\n启动容器群"
+docker-compose up --build -d
