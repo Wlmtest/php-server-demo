@@ -1,33 +1,146 @@
 version: '2'
 services:
-    nginx:
-        image: nginx:1.10.1
-        ports:
-            - "80:80"
-        links:
-            - php-fpm
-        volumes:
-            - "./nginx/nginx.conf:/etc/nginx/nginx.conf"
-            - "./nginx/conf.d:/etc/nginx/conf.d"
-        volumes_from:
-            - php-fpm
-#       networks:
-#           web:
-#               ipv4_address: 172.19.238.2
-    php-fpm:
-        build: ./php-fpm
-        volumes:
-            - "./projects/:/var/www/projects"
-            - "./php-fpm/php.ini:/usr/local/etc/php/php.ini"
-#       networks:
-#           web:
-#               ipv4_address: 172.19.238.3
+  nginx:
+    image: nginx:1.10.1
+    ports:
+     - "80:80"
+     - "443:443"
+    privileged: true
+    links:
+     - php-fpm
+    volumes:
+     - "./nginx/nginx.conf:/etc/nginx/nginx.conf"
+     - "./nginx/conf.d:/etc/nginx/conf.d"
+     - "./nginx/certs:/etc/nginx/certs"
+     - "./nginx/conf:/etc/nginx/conf"
+     - "./logs/nginx:/var/log/nginx"
+    volumes_from:
+     - php-fpm
+    networks:
+      web:
+        ipv4_address: 172.22.0.2
 
+  php-fpm:
+    image: juzipower-php-fpm-7.0.18
+    volumes:
+     - "./projects/:/var/www/projects:cached"
+     - "./php-fpm/php.ini:/usr/local/etc/php/php.ini"
+    working_dir: /var/www/projects
+    links:
+     - redis-master:redis
+     - redis-redeem
+    networks:
+      web:
+        ipv4_address: 172.22.0.3
 
-#networks:
-#    web:
-#        driver: bridge
-#        ipam:
-#            driver: default
-#            config:
-#                - subnet: 172.19.238.0/24
+  mysql:
+    build:
+      context: ./mysql
+    environment:
+     - MYSQL_DATABASE=${MYSQL_DATABASE}
+     - MYSQL_USER=${MYSQL_USER}
+     - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+     - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+    volumes:
+     - ${DATA_SAVE_PATH}/mysql:/var/lib/mysql
+    networks:
+      web:
+        ipv4_address: 172.22.0.4
+
+  redis-master:
+    image: juzipower-redis
+    volumes:
+     - ${DATA_SAVE_PATH}/redis:/data:cached
+     - ./redis/redis-master.conf:/usr/local/etc/redis/redis.conf:cached
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      web:
+        ipv4_address: 172.22.0.5
+
+  redis-redeem:
+    image: juzipower-redis
+    volumes:
+     - ${DATA_SAVE_PATH}/redis:/data:cached
+     - ./redis/redeem.conf:/usr/local/etc/redis/redis.conf:cached
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      web:
+        ipv4_address: 172.22.0.6
+
+  redis-slave:
+    image: juzipower-redis
+    volumes:
+     - ${DATA_SAVE_PATH}/redis:/data:cached
+     - ./redis/redis-slave.conf:/usr/local/etc/redis/redis.conf:cached
+    depends_on:
+     - redis-master
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      web:
+        ipv4_address: 172.22.0.7
+
+  phpmyadmin:
+    build: ./phpmyadmin
+    environment:
+     - PMA_ARBITRARY=1
+     - MYSQL_USER=${PMA_USER}
+     - MYSQL_PASSWORD=${PMA_PASSWORD}
+     - MYSQL_ROOT_PASSWORD=${PMA_ROOT_PASSWORD}
+    ports:
+     - "${PMA_PORT}:80"
+    privileged: true
+    depends_on:
+     - mysql
+    links:
+     - mysql:db
+    networks:
+      web:
+        ipv4_address: 172.22.0.8
+
+  dj:
+    build: ./dj
+    ports:
+     - "8001:8001"
+    extra_hosts:
+     - "test.juzipower.com:172.22.0.2"
+    volumes:
+     - "./projects/dj-py2:/var/www/projects"
+    command: sh testsrv.sh
+    depends_on:
+     - redis-master
+    links:
+     - redis-master:redis
+    networks:
+      web:
+        ipv4_address: 172.22.0.9
+
+  iot:
+    image: java:8-jdk
+    volumes:
+     - "./projects/iot/:/var/www/projects:cached"
+    working_dir: /var/www/projects
+    expose:
+     - "80"
+     - "8080"
+    command: java -jar -Dfile.encoding=UTF-8 ClusterDevicePlatform-server-1.16.0-release.jar
+    links:
+     - redis-master:redis
+    networks:
+      web:
+        ipv4_address: 172.22.0.10
+
+volumes:
+  mysql:
+    driver: "local"
+  mecached:
+    driver: "local"
+  redis:
+    driver: "local"
+
+networks:
+  web:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+       - subnet: 172.22.0.0/24
