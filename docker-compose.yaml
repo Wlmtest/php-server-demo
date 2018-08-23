@@ -28,7 +28,7 @@ services:
     working_dir: /var/www/projects
     links:
      - redis-master:redis
-     - redis-redeem
+       #     - redis-redeem
     networks:
       web:
         ipv4_address: 172.22.0.3
@@ -57,15 +57,17 @@ services:
       web:
         ipv4_address: 172.22.0.5
 
-  redis-redeem:
-    image: juzipower-redis
-    volumes:
-     - ${DATA_SAVE_PATH}/redis:/data:cached
-     - ./redis/redeem.conf:/usr/local/etc/redis/redis.conf:cached
-    command: redis-server /usr/local/etc/redis/redis.conf
-    networks:
-      web:
-        ipv4_address: 172.22.0.6
+        #  redis-redeem:
+        #    image: juzipower-redis
+        #    ports:
+        #     - "6379:6379"
+        #    volumes:
+        #     - ${DATA_SAVE_PATH}/redis:/data:cached
+        #     - ./redis/redeem.conf:/usr/local/etc/redis/redis.conf:cached
+        #    command: redis-server /usr/local/etc/redis/redis.conf
+        #    networks:
+        #      web:
+        #        ipv4_address: 172.22.0.6
 
   redis-slave:
     image: juzipower-redis
@@ -97,37 +99,50 @@ services:
       web:
         ipv4_address: 172.22.0.8
 
-  dj:
-    build: ./dj
-    ports:
-     - "8001:8001"
-    extra_hosts:
-     - "test.juzipower.com:172.22.0.2"
-    volumes:
-     - "./projects/dj-py2:/var/www/projects"
-    command: sh testsrv.sh
-    depends_on:
-     - redis-master
-    links:
-     - redis-master:redis
-    networks:
-      web:
-        ipv4_address: 172.22.0.9
+        #  dj:
+        #    build:
+        #      context: ./dj
+        #      dockerfile: Dockerfile-2
+        #    ports:
+        #     - "8001:8001"
+        #    extra_hosts:
+        #     - "test.juzipower.com:172.22.0.2"
+        #    volumes:
+        #     - "./projects/dj-py2:/var/www/projects"
+        #    command: sh testsrv.sh
+        #    depends_on:
+        #     - redis-master
+        #    links:
+        #     - redis-master:redis
+        #    networks:
+        #      web:
+        #        ipv4_address: 172.22.0.9
 
-  iot:
-    image: java:8-jdk
+        #iot:
+        #    image: java:8-jdk
+        #    volumes:
+        #     - "./projects/iot/:/var/www/projects"
+        #    working_dir: /var/www/projects
+        #    expose:
+        #     - "80"
+        #     - "8080"
+        #    command: java -jar -Dfile.encoding=UTF-8 ClusterDevicePlatform-server-1.16.0-release.jar -server -Xms512m -Xmx512m
+        #    links:
+        #     - redis-master:redis
+        #    networks:
+    #- web
+    #      web:
+    #        ipv4_address: 172.22.0.10
+
+  mongo:
+    build: ./mongo
+    ports:
+      - "27017:27017"
     volumes:
-     - "./projects/iot/:/var/www/projects:cached"
-    working_dir: /var/www/projects
-    expose:
-     - "80"
-     - "8080"
-    command: java -jar -Dfile.encoding=UTF-8 ClusterDevicePlatform-server-1.16.0-release.jar
-    links:
-     - redis-master:redis
+      - ${DATA_SAVE_PATH}/mongo:/data/db
     networks:
       web:
-        ipv4_address: 172.22.0.10
+        ipv4_address: 172.22.0.11
 
 volumes:
   mysql:
